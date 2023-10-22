@@ -1,9 +1,8 @@
 package repo
 
+import "refactoring/internal/entity"
+
 type UserRepository interface {
-	Update()
-	Get()
-	Delete()
-	Create()
-	Search()
+	StorageReader() (*entity.UserStore, error)
+	StorageWriter(userStore *entity.UserStore) error
 }

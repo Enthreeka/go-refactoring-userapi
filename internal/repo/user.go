@@ -1,33 +1,48 @@
 package repo
 
+import (
+	"encoding/json"
+	"io/fs"
+	"os"
+	"refactoring/internal/entity"
+)
+
 type userRepoJSON struct {
+	store string
 }
 
-func NewUserRepoJSON() UserRepository {
-	return &userRepoJSON{}
+func NewUserRepoJSON(store string) UserRepository {
+	return &userRepoJSON{
+		store: store,
+	}
 }
 
-func (u userRepoJSON) Update() {
-	//TODO implement me
-	panic("implement me")
+func (u *userRepoJSON) StorageReader() (*entity.UserStore, error) {
+	fileByte, err := os.ReadFile(u.store)
+	if err != nil {
+		return nil, err
+	}
+
+	userStore := &entity.UserStore{}
+
+	err = json.Unmarshal(fileByte, &userStore)
+	if err != nil {
+		return nil, err
+	}
+
+	return userStore, nil
 }
 
-func (u userRepoJSON) Get() {
-	//TODO implement me
-	panic("implement me")
-}
+func (u *userRepoJSON) StorageWriter(userStore *entity.UserStore) error {
+	b, err := json.MarshalIndent(&userStore, "", " ")
+	if err != nil {
+		return err
+	}
 
-func (u userRepoJSON) Delete() {
-	//TODO implement me
-	panic("implement me")
-}
+	err = os.WriteFile(u.store, b, fs.ModePerm)
+	if err != nil {
+		return err
+	}
 
-func (u userRepoJSON) Create() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (u userRepoJSON) Search() {
-	//TODO implement me
-	panic("implement me")
+	return nil
 }
