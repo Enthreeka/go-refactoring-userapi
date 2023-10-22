@@ -105,7 +105,7 @@ func (u *userUsecase) SearchUsers() (entity.UserList, error) {
 		return nil, err
 	}
 
-	if userStore != nil {
+	if userStore.List == nil {
 		return nil, apperror.ErrStorageEmpty
 	}
 
