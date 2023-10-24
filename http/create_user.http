@@ -3,7 +3,7 @@ Content-Type: application/json
 
 {
   "display_name": "TEST1",
-  "email": "test1@mail.com"
+  "email": "test2@mail.com"
 }
 
 ###

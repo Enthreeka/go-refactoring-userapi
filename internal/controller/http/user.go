@@ -47,6 +47,10 @@ func (u *userHandler) CreateUserHandler(w http.ResponseWriter, r *http.Request) 
 
 	id, err := u.userUsecase.CreateUser(request)
 	if err != nil {
+		if errors.Is(err, apperror.ErrUserExist) {
+			render.Render(w, r, ErrInvalidRequest(err, http.StatusBadRequest))
+			return
+		}
 		render.Render(w, r, ErrInvalidRequest(err, http.StatusInternalServerError))
 		return
 	}

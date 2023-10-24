@@ -8,6 +8,7 @@ import (
 var (
 	ErrUserNotExist = NewError("not found user with the specified id", errors.New("user_not_exist"))
 	ErrStorageEmpty = NewError("not found users in storage", errors.New("storage_empty"))
+	ErrUserExist    = NewError("user with this mail already exist", errors.New("email_exist"))
 )
 
 type AppError struct {
