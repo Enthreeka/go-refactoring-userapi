@@ -1,8 +1,8 @@
-PATCH http://localhost:3333/api/v1/users/14
+PATCH http://localhost:3333/api/v1/users/2
 Content-Type: application/json
 
 {
-  "display_name": "TEST114"
+  "display_name": "Vlad"
 }
 
 ###

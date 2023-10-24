@@ -7,6 +7,7 @@ import (
 	"refactoring/internal/repo"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -28,10 +29,15 @@ func (u *userUsecase) CreateUser(request *dto.CreateUserRequest) (string, error)
 		return "", err
 	}
 
-	for _, users := range userStore.List {
-		if users.Email == request.Email {
-			return "", apperror.ErrUserExist
+	err = userStore.Range(func(key, value any) error {
+		user := value.(entity.User)
+		if user.Email == request.Email {
+			return apperror.ErrUserExist
 		}
+		return nil
+	})
+	if err != nil {
+		return "", apperror.ErrUserExist
 	}
 
 	user := entity.User{
@@ -40,12 +46,9 @@ func (u *userUsecase) CreateUser(request *dto.CreateUserRequest) (string, error)
 		Email:       request.Email,
 	}
 
-	u.mu.Lock()
-	defer u.mu.Unlock()
-
-	userStore.Increment++
-	id := strconv.Itoa(userStore.Increment)
-	userStore.List[id] = user
+	atomic.AddInt32(&userStore.Increment, 1)
+	id := strconv.FormatInt(int64(userStore.Increment), 10)
+	userStore.Set(user, id)
 
 	err = u.userRepoJSON.StorageWriter(userStore)
 	if err != nil {
@@ -61,12 +64,10 @@ func (u *userUsecase) GetUser(id string) (*entity.User, error) {
 		return nil, err
 	}
 
-	u.mu.RLock()
-	user, ok := userStore.List[id]
+	user, ok := userStore.Read(id)
 	if !ok {
 		return nil, apperror.ErrUserNotExist
 	}
-	u.mu.RUnlock()
 
 	return &user, nil
 }
@@ -77,17 +78,14 @@ func (u *userUsecase) UpdateUser(request *dto.UpdateUserRequest, id string) erro
 		return err
 	}
 
-	u.mu.RLock()
-	if _, ok := userStore.List[id]; !ok {
+	user, ok := userStore.Read(id)
+	if !ok {
 		return apperror.ErrUserNotExist
 	}
-	u.mu.RUnlock()
 
-	u.mu.Lock()
-	defer u.mu.Unlock()
-	user := userStore.List[id]
 	user.DisplayName = request.DisplayName
-	userStore.List[id] = user
+
+	userStore.Set(user, id)
 
 	err = u.userRepoJSON.StorageWriter(userStore)
 	if err != nil {
@@ -103,17 +101,14 @@ func (u *userUsecase) DeleteUser(id string) error {
 		return err
 	}
 
-	u.mu.RLock()
-	if _, ok := userStore.List[id]; !ok {
+	_, ok := userStore.Read(id)
+	if !ok {
 		return apperror.ErrUserNotExist
 	}
-	u.mu.RUnlock()
 
-	delete(userStore.List, id)
+	userStore.Delete(id)
 
-	u.mu.Lock()
-	defer u.mu.Unlock()
-	userStore.Increment -= 1
+	atomic.AddInt32(&userStore.Increment, -1)
 
 	err = u.userRepoJSON.StorageWriter(userStore)
 	if err != nil {
